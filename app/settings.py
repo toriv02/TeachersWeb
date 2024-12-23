@@ -29,6 +29,14 @@ ALLOWED_HOSTS = []
 
 AUTH_USER_MODEL = 'teachers.CustmoUser'
 
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication',
+        'rest_framework.authentication.BasicAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+    ],
+}
+
 # Application definition
 
 INSTALLED_APPS = [

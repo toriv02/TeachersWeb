@@ -3,7 +3,7 @@ import { ref,onBeforeMount } from 'vue';
 import { useRouter } from 'vue-router';
 import axios from 'axios';
 import Cookies from 'js-cookie';
-import SchoolSelect from "../components/SchoolSelect.vue";
+
 
 const username = ref("");
 const pas = ref("");
@@ -51,7 +51,6 @@ async function register() {
         });
         if (response.status === 201) {
             router.push('/login');
-             toast.success("Вы успешно зарегистрировались");
         } else {
             errorText.value = response.data.message;
 
@@ -75,7 +74,7 @@ onBeforeMount(async () => {
                     <div class="card custom-bg text-white" style="border-radius: 1rem;">
                         <div class="card-body p-4 text-center">
                             <div class="mb-md-4 mt-md-2 pb-3">
-                                <h2 class="fw-bold mb-2 text-uppercase">Register</h2>
+                                <h2 class="fw-bold mb-2 text-uppercase">регистрация</h2>
                                 <p v-if="errorText" style="color:red">{{ errorText }}</p>
                                 <div class="form-outline form-white mb-3">
                                     <input v-model="fio" id="FIO" class="form-control form-control-sm" />
@@ -85,27 +84,36 @@ onBeforeMount(async () => {
                                     <input v-model="email" type="email" id="Email" class="form-control form-control-sm" />
                                     <label class="form-label" for="Email">Email</label>
                                 </div>
-                                <SchoolSelect v-model="selectedSchool" :schools="schools" />
+                                
+                                <div class="form-outline form-white mb-3">
+                                    <select class="form-select" v-model="selectedSchool" required>
+                                        <option :value="s.id" v-for="s in schools" :key="s.id">
+                                            {{ s.name }}
+                                        </option>
+                                    </select>
+                                    <label for="floatingInput">Учебное заведение</label>
+                                </div>
+
                                 <div class="form-outline form-white mb-3">
                                     <input v-model="username" id="Login" class="form-control form-control-sm" />
-                                    <label class="form-label" for="Login">Username</label>
+                                    <label class="form-label" for="Login">Логин</label>
                                 </div>
                                 <div class="form-outline form-white mb-3">
                                     <input type="password" v-model="pas" id="typePasswordX"
                                         class="form-control form-control-sm" />
-                                    <label class="form-label" for="typePasswordX">Password</label>
+                                    <label class="form-label" for="typePasswordX">Пароль</label>
                                 </div>
                                 <div class="form-outline form-white mb-3">
                                     <input type="password" v-model="pas2" id="typePasswordX2"
                                         class="form-control form-control-sm" />
-                                    <label class="form-label" for="typePasswordX2">Repeat password</label>
+                                    <label class="form-label" for="typePasswordX2">Поавторите пароль</label>
                                 </div>
                                 <button @click="register" class="btn btn-outline-light btn-sm px-4"
                                     type="submit">Register</button>
                             </div>
                             <div>
-                                <p class="mb-0">Already have an account? <router-link to="/login"
-                                        class="text-white-50 fw-bold">Login</router-link>
+                                <p class="mb-0">Уже есть аккаунт? <router-link to="/login"
+                                        class="text-white-50 fw-bold">войдите</router-link>
                                 </p>
                             </div>
                         </div>
@@ -123,7 +131,7 @@ onBeforeMount(async () => {
  .custom-bg {
    background-color: #343a40;
    border-radius: 1rem;
-   height: 700px;
+   height: 720px;
  }
 
  .card-body {

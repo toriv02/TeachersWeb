@@ -46,11 +46,23 @@ class SchoolSerializer(serializers.ModelSerializer):
 
 
 class CustmoUserSerializer(serializers.ModelSerializer):
-     class Meta:
-        model=CustmoUser
-        fields=['username','password','email','fio','school'] 
-        extra_kwargs={'password':{'write_only': True}}
 
-     def create(self, validated_data):
-        user = CustmoUser.objects.create_user(**validated_data)
+    class Meta:
+        model = CustmoUser
+        fields = ['username', 'email', 'password','fio','school']
+        extra_kwargs = {
+            'password': {'write_only': True}
+        }
+
+
+    def create(self, validated_data):
+
+
+        user = CustmoUser.objects.create_user(
+            username=validated_data['username'],
+            email=validated_data['email'],
+            password = validated_data['password'],
+            fio=validated_data['fio'],
+            school=validated_data['school'], # Присваиваем объект школы
+        )
         return user

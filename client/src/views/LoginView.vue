@@ -11,7 +11,7 @@ const pas = ref("");
 const router = useRouter();
 
 const userStore = useUserStore();
-const { isAuthenticated } = storeToRefs(userStore);
+const { isAuthenticated,userId } = storeToRefs(userStore);
 
 const errorText = ref("")
 
@@ -29,7 +29,8 @@ async function login() {
         });
         if (response.status===200) {
             await userStore.fetchUser();
-            router.push("/")
+            
+            
         } else {
            errorText.value = response.data.message
         }
@@ -48,23 +49,22 @@ async function login() {
                  <div class="card custom-bg text-white" style="border-radius: 1rem;">
                      <div class="card-body p-4 text-center">
                          <div class="mb-md-4 mt-md-2 pb-3">
-                             <h2 class="fw-bold mb-2 text-uppercase">Login</h2>
+                             <h2 class="fw-bold mb-2 text-uppercase">Вход</h2>
                                  <p v-if="errorText" style="color:red">{{ errorText }}</p>
                              <div class="form-outline form-white mb-3">
                                  <input v-model="username" id="Login" class="form-control form-control-sm" />
-                                 <label class="form-label" for="Login">Username</label>
+                                 <label class="form-label" for="Login">Логин</label>
                              </div>
                              <div class="form-outline form-white mb-3">
                                  <input type="password" v-model="pas" id="typePasswordX"
                                      class="form-control form-control-sm" />
-                                 <label class="form-label" for="typePasswordX">Password</label>
+                                 <label class="form-label" for="typePasswordX">Паоль</label>
                              </div>
                              <button @click="login" class="btn btn-outline-light btn-sm px-4"
-                                 type="submit">Login</button>
+                                 type="submit">Войти</button>
                          </div>
                          <div>
-                             <p class="mb-0">Don't have an account? <router-link to="/register" class="text-white-50 fw-bold">Sign
-                                     Up</router-link>
+                             <p class="mb-0">Нет аккаунта? <router-link to="/register" class="text-white-50 fw-bold">Зарегестрируйтесь</router-link>
                              </p>
                          </div>
                      </div>

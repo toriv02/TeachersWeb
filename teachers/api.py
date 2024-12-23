@@ -2,7 +2,7 @@ from rest_framework.viewsets import GenericViewSet
 from rest_framework import mixins, permissions
 from teachers.models import *
 from teachers.serializers import *
-
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.viewsets import GenericViewSet
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -96,14 +96,16 @@ class SchoolViewSet(
 
 class UserViewSet(GenericViewSet):
     queryset = CustmoUser.objects.all()
+    permission_classes = [
+        permissions.AllowAny 
+    ]
+    serializer_class = CustmoUserSerializer
 
     @action(url_path="info", methods=["GET"], detail=False)
     def get_info(self, request, *args, **kwargs):
         data = {
-            "is_authenticated": request.user.is_authenticated,
-            "user_type": "anonymous" if not request.user.is_authenticated else "authenticated",
+            "is_authenticated": request.user.is_authenticated
         }
-
         if request.user.is_authenticated:
             data.update({
                 "username": request.user.username,
@@ -124,10 +126,11 @@ class UserViewSet(GenericViewSet):
             login(request, user)
         return Response({})
 
+
     @action(url_path="logout", methods=["POST"], detail=False)
     def logout(self, request, *args, **kwargs):
         logout(request)
-        return Response({})
+        return Response({"message": "Logout successful"}, status=status.HTTP_200_OK)
 
     @action(url_path="register", methods=["POST"], detail=False)
     def register(self, request, *args, **kwargs):
