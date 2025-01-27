@@ -1,48 +1,56 @@
 <script setup>
-import {computed, onBeforeMount, ref} from 'vue';
+import { computed, onBeforeMount, ref } from 'vue';
 import axios from 'axios';
 import Cookies from 'js-cookie';
 import { storeToRefs } from 'pinia';
 import useUserStore from '../stores/userStore';
 
 const userStore = useUserStore();
-const { isSuperUser} = storeToRefs(userStore);
+const { isSuperUser } = storeToRefs(userStore);
 
 onBeforeMount(() => {
   axios.defaults.headers.common['X-CSRFToken'] = Cookies.get("csrftoken");
-})
-
-const documents=ref([])
-
-const documentToAdd=ref({})
-const documentToEdit=ref({})
-
-
-const filters = ref({
-    headline: "",
-    description: ""
 });
 
+const documents = ref([]);
+const currentPage = ref(1);
+const totalPages = ref(1);
+const documentToAdd = ref({});
+const documentToEdit = ref({});
+const filters = ref({
+  content: '',
+});
+const hoveredDocument = ref(null);
 
-onBeforeMount(async ()=>{
-  await fetchDocuments()
-})
-async function fetchDocuments(){
-  const r =await axios.get("/api/documents/");
-  console.log(r.data);
-  documents.value=r.data;
+onBeforeMount(async () => {
+  await fetchDocuments();
+});
+
+async function fetchDocuments() {
+    try {
+        const response = await axios.get('/api/documents/', {
+            params: {
+                page: currentPage.value,
+                ordering: '-time', 
+                search: filters.value.content,
+            },
+        });
+        documents.value = response.data.results;
+        totalPages.value = Math.ceil(response.data.count / 5);
+    } catch (error) {
+        console.error('Ошибка загрузки документов:', error);
+    }
 }
-
 async function onDocumentAdd() {
-  await axios.post("/api/documents/", {
+  await axios.post('/api/documents/', {
     ...documentToAdd.value,
   });
-  await fetchDocuments(); // переподтягиваю
+  await fetchDocuments();
 }
 
 async function onRemoveClick(document) {
   await axios.delete(`/api/documents/${document.id}/`);
-  await fetchDocuments(); // переподтягиваю
+  await fetchDocuments();
 }
 
 async function onDocumentEditClick(document) {
@@ -56,24 +64,15 @@ async function onUpdateDocument() {
   await fetchDocuments();
 }
 
-const filteredDocuments = computed(() => {
-    return documents.value.filter(document => {
-    const headlineMatch = !filters.value.headline || (document.headline && document.headline.toLowerCase().includes(filters.value.headline.toLowerCase()));
-    const descriptionMatch = !filters.value.description || (document.description && document.description.toLowerCase().includes(filters.value.description.toLowerCase()));
-
-    return headlineMatch && descriptionMatch;
-    });
-});
-
 function resetFilters() {
-    filters.value = {
-        headline: "",
-        description: ""
-    };
+  filters.value = {
+    content: '',
+  };
+  fetchDocuments();
 }
 
-function onPush(document){
-    window.location.href =document.ref
+function onPush(document) {
+  window.open(document.ref);
 }
 </script>
 
@@ -96,9 +95,9 @@ function onPush(document){
           <textarea
             class="form-control"
             v-model="documentToAdd.description"
-            rows="3"
+            rows="5"
             required
-             style="overflow-y: auto; resize: none;"
+            style="overflow-y: auto; resize: none; min-height: 120px;"
           ></textarea>
           <label for="floatingInput">Описание</label>
         </div>
@@ -125,54 +124,80 @@ function onPush(document){
 <h4>Фильтрация</h4>
 <div class="row mb-3 mt-3">
     <div class="col">
-        <input type="text" class="form-control" placeholder="Загаловок" v-model="filters.headline">
-    </div>
-    <div class="col">
-        <input type="text" class="form-control" placeholder="Описание" v-model="filters.description">
+        <input type="text" class="form-control" placeholder="Пример текста" v-model="filters.content" @input="fetchDocuments">
     </div>
   <div class="col-auto">
         <button class="btn btn-primary" @click="resetFilters">Сбросить</button>
   </div>
 </div>
 
-<div v-for="item in filteredDocuments" class="document-item">
-    <div class="document-info">
-        <span><h5>{{ item.headline }}:</h5></span>
-        <span>{{ item.description}}</span>
+<div class="check-document-container">
+<div v-if="!documents.length">
+  <p class="text-white">Нет документов</p>
+</div>
+<div v-else>
+ <div v-for="item in documents" class="document-item">
+    <div class="document-header">
+      <div class="document-title">
+          <h5>{{ item.headline }}:</h5>
+      </div>
+      <div class="document-actions">
+          <button 
+              v-if="isSuperUser"
+              class="btn btn-success"
+              @click="onDocumentEditClick(item)"
+              data-bs-toggle="modal"
+              data-bs-target="#editDocumentModal"
+          >
+              <i class="bi bi-pen-fill"></i>
+          </button>
+          <button 
+              v-if="isSuperUser"
+              class="btn btn-danger"
+              @click="onRemoveClick(item)"
+          >
+              <i class="bi bi-x"></i>
+          </button>
+          <button 
+              class="btn btn-info"
+              @click="onPush(item)"
+          >
+          <i class="bi bi-arrow-bar-right"></i>
+          </button>
+      </div>
     </div>
-    <div class="document-actions">
-        <button 
-            v-if="isSuperUser"
-            class="btn btn-success"
-            @click="onDocumentEditClick(item)"
-            data-bs-toggle="modal"
-            data-bs-target="#editDocumentModal"
-        >
-            <i class="bi bi-pen-fill"></i>
-        </button>
-        <button 
-            v-if="isSuperUser"
-            class="btn btn-danger"
-            @click="onRemoveClick(item)"
-        >
-            <i class="bi bi-x"></i>
-        </button>
-        <button 
-            class="btn btn-info"
-            @click="onPush(item)"
-        >
-        <i class="bi bi-arrow-bar-right"></i>
-        </button>
+    <div class="document-description">
+      <span>{{ item.description}}</span>
     </div>
+  </div>
+  <div class="pagination">
+      <button
+              class="btn btn-secondary"
+              :disabled="currentPage === 1"
+              @click="currentPage--; fetchDocuments()"
+          >
+              <i class="bi bi-arrow-left"></i> Назад
+          </button>
+          <span class="text-white">{{ currentPage }} / {{ totalPages }}</span>
+          <button
+              class="btn btn-secondary"
+              :disabled="currentPage === totalPages"
+              @click="currentPage++; fetchDocuments()"
+          >
+              Вперед <i class="bi bi-arrow-right"></i>
+          </button>
+     </div>
+  </div>
 </div>
 
-<!-- модальное окно для редактирования жанра-->
+
+<!-- модальное окно для редактирования-->
 <div class="modal fade" id="editDocumentModal" tabindex="-1">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-centered modal-lg"> 
       <div class="modal-content">
         <div class="modal-header">
           <h1 class="modal-title fs-5" id="exampleModalLabel">
-            редактировать
+            Редактировать документ
           </h1>
           <button
             type="button"
@@ -182,44 +207,37 @@ function onPush(document){
           ></button>
         </div>
         <div class="modal-body">
-          <div class="row">
-
-            <div class="col">
-              <div class="form-floating">
-                <input
-                  type="text"
-                  class="form-control"
-                  v-model="documentToEdit.headline"
-                />
-                <label for="floatingInput">Загаловок</label>
-              </div>
+            <div class="form-floating mb-3">
+                 <input
+                    type="text"
+                    class="form-control"
+                    v-model="documentToEdit.headline"
+                    id="floatingInputHeadline"
+                    />
+                 <label for="floatingInputHeadline">Заголовок</label>
             </div>
 
-            <div class="col">
-              <div class="form-floating">
+            <div class="form-floating mb-3">
+                <textarea
+                    class="form-control"
+                    v-model="documentToEdit.description"
+                    id="floatingInputDescription"
+                    rows="5"
+                ></textarea>
+                <label for="floatingInputDescription">Описание</label>
+           </div>
+
+
+           <div class="form-floating mb-3">
                 <input
-                  type="text"
-                  class="form-control"
-                  v-model="documentToEdit.description"
-                />
-                <label for="floatingInput">Описание</label>
+                 type="text"
+                 class="form-control"
+                v-model="documentToEdit.ref"
+                  id="floatingInputRef"
+                 />
+                <label for="floatingInputRef">Ссылка</label>
               </div>
-            </div>
-
-            <div class="col">
-              <div class="form-floating">
-                <input
-                  type="text"
-                  class="form-control"
-                  v-model="documentToEdit.ref"
-                />
-                <label for="floatingInput">Ссылка</label>
-              </div>
-            </div>
-
-
-          </div>
-        </div>
+           </div>
         <div class="modal-footer">
           <button
             type="button"
@@ -241,6 +259,7 @@ function onPush(document){
     </div>
 </div>
 
+
 </template>
 
 <style>
@@ -250,14 +269,19 @@ function onPush(document){
   border: 1px solid silver;
   border-radius: 8px;
   display: flex;
-  align-items: center;
-  gap: 1rem;
+  flex-direction: column;
 }
-.document-info{
+.document-header{
   display: flex;
-  flex-wrap: wrap;
-  gap:0.5rem;
-  flex: 1;
+  align-items: center;
+  justify-content: space-between;
+  color: #fff;
+}
+.document-description{
+  margin: 0.5rem;
+  white-space: pre-line;
+  word-wrap: break-word;
+  color: #fff;
 }
 .document-actions{
   flex: none;
@@ -289,5 +313,50 @@ function onPush(document){
 .form-floating label {
   margin-bottom: 0.5rem;
 }
-</style>
 
+.check-document-container {
+    max-width: 1000px;
+    margin: 20px auto;
+    padding: 20px;
+    border-radius: 1rem;
+    background-color: #343a40;
+}
+.document-card {
+    border: 1px solid #eee;
+    margin-bottom: 20px;
+    padding: 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    text-decoration: none;
+    color: #333;
+    display: block;
+    transition: background-color 0.3s ease;
+    background-color: #495057;
+}
+.document-headline {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+    font-weight: bold;
+    color: white;
+}
+.button-container {
+    display: flex;
+    gap: 1rem;
+}
+.pagination {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 20px;
+}
+.pagination button {
+    background-color: #007bff;
+    color: white;
+    border-color: #007bff;
+}
+.pagination button:hover{
+    background-color: #0056b3;
+    border-color: #0056b3;
+}
+
+</style>

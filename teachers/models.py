@@ -47,6 +47,7 @@ class CustmoUser(AbstractUser):
             'auth.Permission',
             verbose_name='user permissions',
             blank=True,
+            null=True,
             help_text='Specific permissions for this user.',
             related_name="custom_user_set",
             related_query_name="custom_user",
@@ -57,7 +58,7 @@ class Record(models.Model):
     headline = models.CharField(max_length=255, verbose_name="Заголовок")
     comment = models.TextField(blank=True, null=True, verbose_name="Комментарии к публикации")
     time = models.DateTimeField(auto_now_add=True, verbose_name="Дата и время публикации")
-    author = models.ForeignKey(User, on_delete=models.CASCADE, related_name='records', verbose_name="Автор публикации")
+    author = models.ForeignKey(CustmoUser, on_delete=models.CASCADE, related_name='records',null=True,verbose_name="Автор публикации")
     subject = models.ForeignKey(Subject, on_delete=models.CASCADE, related_name='records', blank=True, null=True, verbose_name="Предмет")
     is_published = models.BooleanField(default=False, verbose_name="Статус публикации")  
 
@@ -71,8 +72,8 @@ class Record(models.Model):
 
 class File(models.Model):
     """Модель для файлов, прикрепленных к публикации"""
-    records_FK = models.ForeignKey(Record, on_delete=models.CASCADE, related_name='files', verbose_name="Публикация")
-    file = models.FileField(upload_to='uploads/', verbose_name="Файл") 
+    records_FK = models.ForeignKey(Record, on_delete=models.CASCADE, related_name='files', null=True, verbose_name="Публикация")
+    file = models.FileField(upload_to='uploads/', null=True, verbose_name="Файл") 
 
     class Meta:
        verbose_name = "Файл"
@@ -82,8 +83,8 @@ class File(models.Model):
 class Feedback(models.Model):
     """Модель для обратной связи (комментарии модератора)"""
     content = models.TextField(verbose_name="Содержание")
-    records_FK = models.ForeignKey(Record, on_delete=models.CASCADE, related_name='feedbacks', verbose_name="Публикация")
-    moderator = models.ForeignKey(User, on_delete=models.CASCADE, related_name='feedbacks', verbose_name="Модератор")
+    records_FK = models.ForeignKey(Record, on_delete=models.CASCADE, related_name='feedbacks',null=True, verbose_name="Публикация")
+    moderator = models.ForeignKey(User, on_delete=models.CASCADE, related_name='feedbacks',null=True, verbose_name="Модератор")
     time = models.DateTimeField(auto_now_add=True, verbose_name="Время создания")
 
     class Meta:
@@ -94,8 +95,8 @@ class Feedback(models.Model):
 class Review(models.Model):
     """Модель для рецензий учителей"""
     content = models.TextField(verbose_name="Содержание")
-    records_FK = models.ForeignKey(Record, on_delete=models.CASCADE, related_name='reviews', verbose_name="Публикация")
-    author = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reviews', verbose_name="Автор рецензии")
+    records_FK = models.ForeignKey(Record, on_delete=models.CASCADE, related_name='reviews',null=True, verbose_name="Публикация")
+    author = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reviews', null=True, verbose_name="Автор рецензии")
     time = models.DateTimeField(auto_now_add=True, verbose_name="Время создания")
 
     class Meta:
@@ -108,6 +109,7 @@ class Document(models.Model):
     headline = models.CharField(max_length=255, verbose_name="Заголовок")
     description = models.TextField(verbose_name="Описание")
     ref = models.TextField(verbose_name="Ссылка")
+    time = models.DateTimeField(auto_now_add=True, verbose_name="Время создания")
 
     class Meta:
         verbose_name = "Нормативный документ"

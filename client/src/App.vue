@@ -12,11 +12,7 @@ import 'bootstrap/dist/js/bootstrap.bundle.min'
 const userStore=useUserStore();
 const {
     isAuthenticated,
-    username,
-    userId,
-    schoolID,
-    fio,
-    error,
+    isSuperUser,
 }=storeToRefs(userStore)
 const router = useRouter();
 const route = useRoute();
@@ -58,12 +54,21 @@ const isActive = (routePath) => {
           <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="navbarNav">
-          <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+          <ul class="navbar-nav mb-2 mb-lg-0">
             <li class="nav-item" :class="{ 'active': isActive('/documents') }">
               <router-link class="nav-link" to="/documents">Документы</router-link>
             </li>
             <li class="nav-item" :class="{ 'active': isActive('/records') }">
               <router-link class="nav-link" to="/records">Материалы</router-link>
+            </li>
+          </ul>
+
+          <ul v-if="isSuperUser" class="navbar-nav">
+            <li class="nav-item" :class="{ 'active': isActive('/subjects') }">
+              <router-link class="nav-link" to="/subjects">Предметы</router-link>
+            </li>
+            <li class="nav-item" :class="{ 'active': isActive('/schools') }">
+              <router-link class="nav-link" to="/schools">Школы</router-link>
             </li>
           </ul>
 
@@ -73,6 +78,9 @@ const isActive = (routePath) => {
             </li>
             <li v-if="!isAuthenticated" class="nav-item">
               <router-link class="nav-link" to="/register">Зарегестрироваьтся</router-link>
+            </li>
+            <li v-if="isAuthenticated" class="nav-item">
+              <router-link class="nav-link" to="/my">Мои публикации</router-link>
             </li>
             <li v-if="isAuthenticated" class="nav-item">
                <a class="nav-link" href="#" @click.prevent="logout">выйти</a>

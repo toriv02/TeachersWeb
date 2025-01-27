@@ -29,7 +29,7 @@ async function login() {
         });
         if (response.status===200) {
             await userStore.fetchUser();
-            
+            if(isAuthenticated.value) router.push("/")
             
         } else {
            errorText.value = response.data.message

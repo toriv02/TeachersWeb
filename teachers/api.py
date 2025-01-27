@@ -7,8 +7,17 @@ from rest_framework.viewsets import GenericViewSet
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.contrib.auth import authenticate, login, logout
-
+from rest_framework.pagination import PageNumberPagination
+from rest_framework import filters
+from django_filters import rest_framework as dj_filters
 from rest_framework import status
+from rest_framework.renderers import JSONRenderer
+
+
+class CustomPagination(PageNumberPagination):
+    page_size = 5
+    page_size_query_param = 'page_size'
+    max_page_size = 1000
 
 
 class SubjectViewSet(
@@ -33,7 +42,20 @@ class RecordViewSet(
     ):
     queryset=Record.objects.all()
     serializer_class=RecordSerializer
+    pagination_class = CustomPagination
+    filter_backends = [filters.OrderingFilter,filters.SearchFilter,dj_filters.DjangoFilterBackend]
+    ordering_fields = ['time']
+    search_fields = ['headline','comment']
+    filterset_fields = ['is_published','subject','author']
+    def update(self, request, *args, **kwargs): 
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=True) 
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        return Response(serializer.data)
 
+    def perform_update(self, serializer):
+        serializer.save()
 
 class FileViewSet(
         mixins.CreateModelMixin,
@@ -57,6 +79,21 @@ class FeedbackViewSet(
     ):
     queryset=Feedback.objects.all()
     serializer_class=FeedbackSerializer
+    filter_backends = [dj_filters.DjangoFilterBackend]
+    filterset_fields = ['records_FK']
+
+    def update(self, request, *args, **kwargs): 
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=True) 
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        return Response(serializer.data)
+
+    def perform_update(self, serializer):
+            serializer.save()
+    
+    def perform_create(self, serializer):
+        serializer.save(moderator=self.request.user)
 
 
 class ReviewViewSet(
@@ -64,11 +101,18 @@ class ReviewViewSet(
         mixins.RetrieveModelMixin,
         mixins.UpdateModelMixin,
         mixins.DestroyModelMixin,
-        mixins.ListModelMixin,
+        mixins.ListModelMixin, 
         GenericViewSet
     ):
     queryset=Review.objects.all()
     serializer_class=ReviewSerializer
+    pagination_class = CustomPagination
+    filter_backends = [dj_filters.DjangoFilterBackend] # добавляем фильтрацию
+    filterset_fields = ['records_FK'] # добавляем фильтрацию по полю records_FK
+    
+
+    def perform_create(self, serializer):
+        serializer.save(author=self.request.user)
 
 
 class DocumentViewSet(
@@ -81,6 +125,11 @@ class DocumentViewSet(
     ):
     queryset=Document.objects.all()
     serializer_class=DocumentSerializer
+    pagination_class = CustomPagination
+    filter_backends = [filters.OrderingFilter,filters.SearchFilter]
+    ordering_fields=['time']
+    search_fields = ['headline','description']
+    
 
 
 class SchoolViewSet(
@@ -93,6 +142,9 @@ class SchoolViewSet(
     ):
     queryset=School.objects.all()
     serializer_class=SchoolSerializer
+    pagination_class = CustomPagination
+    filter_backends = [filters.SearchFilter]
+    search_fields = ['name']
 
 class UserViewSet(GenericViewSet):
     queryset = CustmoUser.objects.all()
